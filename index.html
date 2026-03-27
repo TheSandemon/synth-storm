@@ -680,16 +680,17 @@
       for (let arm = 0; arm < arms; arm++) {
         const baseAngle = (arm / arms) * Math.PI * 2 + time * rotSpeed;
         ctx.beginPath();
+        let lastAlpha = 0;
         for (let r = 0; r < 350; r += 2) {
           const angle = baseAngle + r * 0.025;
           const spiralR = r * (1 + beatDecay * 0.15);
           const x = cx + Math.cos(angle) * spiralR * 0.3;
           const y = cy + Math.sin(angle) * spiralR * 0.3;
-          const alpha = Math.max(0, 1 - r / 370) * (0.25 + amp / 280);
+          lastAlpha = Math.max(0, 1 - r / 370) * (0.25 + amp / 280);
           if (r === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = t.bass + Math.floor(alpha * 90).toString(16).padStart(2, '0');
+        ctx.strokeStyle = t.bass + Math.floor(lastAlpha * 90).toString(16).padStart(2, '0');
         ctx.lineWidth = 1.2 + beatDecay * 2.5;
         ctx.stroke();
       }
