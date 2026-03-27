@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SYNTH STORM</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -14,11 +14,7 @@
       color: #D4A853;
       user-select: none;
     }
-    canvas {
-      display: block;
-      position: fixed;
-      top: 0; left: 0;
-    }
+    canvas { display: block; position: fixed; top: 0; left: 0; }
     #ui {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -31,82 +27,136 @@
       pointer-events: none;
     }
     #title {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 18px;
-      font-weight: 900;
+      font-family: 'Syncopate', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
       color: #00ff88;
       text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff8866;
-      letter-spacing: 4px;
+      letter-spacing: 6px;
     }
     #stats {
       display: flex;
-      gap: 24px;
-      font-size: 11px;
+      gap: 20px;
+      font-size: 10px;
       letter-spacing: 2px;
       text-transform: uppercase;
     }
-    .stat-label { color: #666; }
+    .stat-label { color: #555; }
     .stat-value { color: #D4A853; }
+    #progress-bar {
+      position: fixed;
+      bottom: 56px;
+      left: 24px;
+      right: 24px;
+      height: 3px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      z-index: 10;
+      cursor: pointer;
+      display: none;
+    }
+    #progress-fill {
+      height: 100%;
+      background: linear-gradient(to right, #00ff88, #D4A853);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.1s linear;
+      box-shadow: 0 0 8px #00ff88;
+    }
     #controls {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      padding: 16px 24px;
+      padding: 14px 24px;
       display: flex;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
       z-index: 10;
-      background: linear-gradient(to top, rgba(10,10,10,0.9) 0%, transparent 100%);
+      background: linear-gradient(to top, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.7) 70%, transparent 100%);
     }
     .ctrl-btn {
-      background: rgba(212, 168, 83, 0.1);
-      border: 1px solid #D4A85344;
+      background: rgba(212, 168, 83, 0.08);
+      border: 1px solid #D4A85333;
       color: #D4A853;
-      padding: 8px 16px;
+      padding: 7px 14px;
       font-family: 'Space Mono', monospace;
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 2px;
       text-transform: uppercase;
       cursor: pointer;
       transition: all 0.2s;
+      border-radius: 2px;
     }
     .ctrl-btn:hover {
-      background: rgba(212, 168, 83, 0.25);
+      background: rgba(212, 168, 83, 0.22);
       border-color: #D4A853;
       box-shadow: 0 0 16px #D4A85344;
     }
     .ctrl-btn.active {
-      background: rgba(0, 255, 136, 0.15);
+      background: rgba(0, 255, 136, 0.12);
       border-color: #00ff88;
       color: #00ff88;
       box-shadow: 0 0 16px #00ff8844;
     }
+    .ctrl-btn.loop-on {
+      background: rgba(0, 255, 136, 0.18);
+      border-color: #00ff88;
+      color: #00ff88;
+    }
     #drop-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 255, 136, 0.05);
+      background: rgba(0, 255, 136, 0.04);
       border: 2px dashed #00ff88;
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 20;
-      font-family: 'Orbitron', sans-serif;
-      font-size: 24px;
+      font-family: 'Syncopate', sans-serif;
+      font-size: 20px;
       color: #00ff88;
-      letter-spacing: 4px;
+      letter-spacing: 6px;
       text-shadow: 0 0 20px #00ff88;
     }
     #drop-overlay.show { display: flex; }
     #mode-label {
       position: fixed;
-      bottom: 60px;
+      bottom: 70px;
       left: 50%;
       transform: translateX(-50%);
-      font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-family: 'Syncopate', sans-serif;
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: #333;
+      z-index: 10;
+      pointer-events: none;
+    }
+    #theme-indicator {
+      position: fixed;
+      top: 16px;
+      right: 24px;
+      font-family: 'Syncopate', sans-serif;
+      font-size: 9px;
       letter-spacing: 3px;
       color: #444;
       z-index: 10;
       pointer-events: none;
+    }
+    #audio-name {
+      position: fixed;
+      bottom: 76px;
+      right: 24px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: #444;
+      z-index: 10;
+      pointer-events: none;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: none;
     }
   </style>
 </head>
@@ -120,17 +170,23 @@
       <span><span class="stat-label">PARTICLES </span><span class="stat-value" id="pcount">0</span></span>
     </div>
   </div>
-  <div id="mode-label">M: MODE &nbsp;|&nbsp; T: THEME &nbsp;|&nbsp; SPACE: PAUSE</div>
+  <div id="theme-indicator">NEON</div>
+  <div id="audio-name"></div>
+  <div id="mode-label">M: MODE &nbsp;|&nbsp; T: THEME &nbsp;|&nbsp; SPACE: PAUSE &nbsp;|&nbsp; P: BURST &nbsp;|&nbsp; L: LOOP</div>
+  <div id="progress-bar" onclick="seekAudio(event)"><div id="progress-fill"></div></div>
   <div id="controls">
     <button class="ctrl-btn active" id="btnParticles" onclick="toggleMode('particles')">PARTICLES</button>
     <button class="ctrl-btn" id="btnSpiral" onclick="toggleMode('spiral')">SPIRAL</button>
     <button class="ctrl-btn" id="btnGalaxy" onclick="toggleMode('galaxy')">GALAXY</button>
     <button class="ctrl-btn" id="btnWave" onclick="toggleMode('wave')">WAVE</button>
     <button class="ctrl-btn" id="btnStorm" onclick="toggleMode('storm')">STORM</button>
+    <button class="ctrl-btn" id="btnLaser" onclick="toggleMode('laser')">LASER</button>
+    <button class="ctrl-btn" id="btnWaterfall" onclick="toggleMode('waterfall')">WATERFALL</button>
     <button class="ctrl-btn" onclick="toggleFile()">FILE</button>
+    <button class="ctrl-btn" onclick="toggleLoop()" id="btnLoop">LOOP</button>
     <button class="ctrl-btn" onclick="spawnBurst()">BURST</button>
   </div>
-  <div id="drop-overlay" id="drop-overlay">DROP AUDIO FILE</div>
+  <div id="drop-overlay">DROP AUDIO FILE</div>
   <input type="file" id="file-input" accept="audio/*" style="display:none">
 
   <script>
@@ -139,11 +195,13 @@
     let W, H, cx, cy;
 
     const themes = {
-      neon: { bg: '#0a0a0a', particle: '#00ff88', accent: '#ff00ff', bass: '#00ffff', mid: '#00ff88', high: '#ffffff', line: '#00ff8833' },
-      gold: { bg: '#0a0a0a', particle: '#D4A853', accent: '#ff8800', bass: '#D4A853', mid: '#ffcc00', high: '#ffffff', line: '#D4A85333' },
-      void: { bg: '#050508', particle: '#8844ff', accent: '#ff4488', bass: '#4488ff', mid: '#8844ff', high: '#ffffff', line: '#8844ff33' },
-      cyber: { bg: '#080810', particle: '#00ccff', accent: '#ff3300', bass: '#00ccff', mid: '#00ffcc', high: '#ffffff', line: '#00ccff33' }
+      neon: { bg: '#0a0a0a', particle: '#00ff88', accent: '#ff00ff', bass: '#00ffff', mid: '#00ff88', high: '#ffffff', line: '#00ff8833', wave: '#00ff88' },
+      gold: { bg: '#0a0a0a', particle: '#D4A853', accent: '#ff8800', bass: '#D4A853', mid: '#ffcc00', high: '#ffffff', line: '#D4A85333', wave: '#D4A853' },
+      void: { bg: '#050508', particle: '#8844ff', accent: '#ff4488', bass: '#4488ff', mid: '#8844ff', high: '#ffffff', line: '#8844ff33', wave: '#8844ff' },
+      cyber: { bg: '#080810', particle: '#00ccff', accent: '#ff3300', bass: '#00ccff', mid: '#00ffcc', high: '#ffffff', line: '#00ccff33', wave: '#00ccff' },
+      plasma: { bg: '#0a000a', particle: '#ff4488', accent: '#ffaa00', bass: '#ff44ff', mid: '#ff8800', high: '#ffffff', line: '#ff448833', wave: '#ff44ff' }
     };
+    const themeDisplayNames = { neon: 'NEON', gold: 'GOLD', void: 'VOID', cyber: 'CYBER', plasma: 'PLASMA' };
     let currentTheme = 'neon';
     let mode = 'particles';
     let paused = false;
@@ -159,8 +217,14 @@
     let lastBeatTime = 0;
     let shakeAmt = 0;
     let chromaAmt = 0;
-    let autoMode = 'particles';
     let autoTimer = 0;
+    let loopEnabled = true;
+    let hasAudioFile = false;
+    let fftSize = 1024;
+    let waterfallData = [];
+    const WATERFALL_HEIGHT = 80;
+    let prevBass = 0;
+    let beatPulse = 0;
 
     function resize() {
       W = canvas.width = window.innerWidth;
@@ -168,15 +232,17 @@
       cx = W / 2;
       cy = H / 2;
       initStars();
+      waterfallData = [];
     }
     function initStars() {
       stars = [];
-      for (let i = 0; i < 200; i++) {
+      for (let i = 0; i < 250; i++) {
         stars.push({
           x: Math.random() * W,
           y: Math.random() * H,
           z: Math.random() * 3 + 0.5,
-          brightness: Math.random()
+          brightness: Math.random(),
+          twinkleSpeed: Math.random() * 0.05 + 0.01
         });
       }
     }
@@ -193,7 +259,7 @@
       }
       update(amp, freq) {
         this.trail.push({ x: this.x, y: this.y });
-        if (this.trail.length > 12) this.trail.shift();
+        if (this.trail.length > 16) this.trail.shift();
         this.x += this.vx;
         this.y += this.vy;
         this.vx *= 0.98;
@@ -207,7 +273,6 @@
       }
       draw() {
         const alpha = Math.max(0, this.life / this.maxLife);
-        // trail
         if (this.trail.length > 1) {
           ctx.beginPath();
           ctx.moveTo(this.trail[0].x, this.trail[0].y);
@@ -221,11 +286,10 @@
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fillStyle = this.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
         ctx.fill();
-        // glow
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
-        const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2);
-        grd.addColorStop(0, this.color + '44');
+        ctx.arc(this.x, this.y, this.size * 2.5, 0, Math.PI * 2);
+        const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2.5);
+        grd.addColorStop(0, this.color + '33');
         grd.addColorStop(1, this.color + '00');
         ctx.fillStyle = grd;
         ctx.fill();
@@ -255,17 +319,18 @@
 
     function spawnBurst() {
       const t = themes[currentTheme];
-      const count = 80 + Math.floor(Math.random() * 60);
+      const count = 100 + Math.floor(Math.random() * 80);
       for (let i = 0; i < count; i++) {
         const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
-        const speed = 2 + Math.random() * 6;
+        const speed = 2 + Math.random() * 7;
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
-        const colors = [t.particle, t.accent, t.bass, '#ffffff'];
+        const colors = [t.particle, t.accent, t.bass, t.mid, '#ffffff'];
         const color = colors[Math.floor(Math.random() * colors.length)];
-        particles.push(new Particle(cx, cy, vx, vy, color, 1.5 + Math.random() * 3, 60 + Math.random() * 60));
+        particles.push(new Particle(cx, cy, vx, vy, color, 1.5 + Math.random() * 3.5, 60 + Math.random() * 60));
       }
       beatDecay = 1;
+      beatPulse = 1;
     }
 
     function spawnGalaxyParticles(amp, freq) {
@@ -289,7 +354,9 @@
       const avg = bassHistory.reduce((a, b) => a + b, 0) / bassHistory.length;
       const variance = bassHistory.reduce((a, b) => a + (b - avg) ** 2, 0) / bassHistory.length;
       const threshold = avg + Math.sqrt(variance) * 1.8;
-      if (amp > threshold && amp > 30 && time - lastBeatTime > 10) {
+      const delta = amp - prevBass;
+      prevBass = amp;
+      if (amp > threshold && amp > 30 && time - lastBeatTime > 10 && delta > 5) {
         lastBeatTime = time;
         return true;
       }
@@ -299,9 +366,9 @@
     function drawStars() {
       const t = themes[currentTheme];
       for (let s of stars) {
-        s.brightness += (Math.random() - 0.5) * 0.05;
+        s.brightness += (Math.random() - 0.5) * s.twinkleSpeed;
         s.brightness = Math.max(0.1, Math.min(1, s.brightness));
-        const twinkle = s.brightness * (0.3 + beatDecay * 0.3);
+        const twinkle = s.brightness * (0.3 + beatDecay * 0.4 + beatPulse * 0.3);
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.z * (0.5 + twinkle * 0.5), 0, Math.PI * 2);
         ctx.fillStyle = t.high + Math.floor(twinkle * 100).toString(16).padStart(2, '0');
@@ -317,30 +384,156 @@
       const step = Math.floor(freqData.length / bars);
       for (let i = 0; i < bars; i++) {
         const val = freqData[i * step] || 0;
-        const barH = (val / 255) * H * 0.55;
+        const barH = (val / 255) * H * 0.5;
         const x = i * barW;
         const y = cy - barH / 2;
-        const alpha = 0.3 + (val / 255) * 0.5;
-        const hue = currentTheme === 'neon' ? 160 : currentTheme === 'gold' ? 40 : currentTheme === 'void' ? 270 : 200;
+        const alpha = 0.25 + (val / 255) * 0.5;
+        const hue = currentTheme === 'neon' ? 160 : currentTheme === 'gold' ? 40 : currentTheme === 'void' ? 270 : currentTheme === 'cyber' ? 200 : 320;
         const lightness = 50 + (val / 255) * 30;
         ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${alpha})`;
         ctx.fillRect(x, y, barW - 1, barH);
-        // glow top
         if (val > 150) {
           ctx.fillStyle = `hsla(${hue}, 100%, 80%, ${(val / 255) * 0.4})`;
-          ctx.fillRect(x, y - 4, barW - 1, 4);
+          ctx.fillRect(x, y - 3, barW - 1, 3);
         }
       }
-      // wave line
       if (waveData) {
         ctx.beginPath();
         ctx.moveTo(0, cy);
         for (let i = 0; i < waveData.length; i++) {
           const x = (i / waveData.length) * W;
-          const y = cy + (waveData[i] - 128) * 0.8;
+          const y = cy + (waveData[i] - 128) * 0.9;
           ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = t.particle + '66';
+        ctx.strokeStyle = t.particle + '55';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+
+    function drawLaserGrid(amp, freqAvg) {
+      const t = themes[currentTheme];
+      const gridSize = 40;
+      const cols = Math.ceil(W / gridSize) + 1;
+      const rows = Math.ceil(H / gridSize) + 1;
+      const perspective = 0.6;
+      const tiltAngle = time * 0.008;
+
+      // Frequency bands
+      let bassVal = 0, midVal = 0, highVal = 0;
+      if (freqData) {
+        for (let i = 0; i < 8; i++) bassVal += freqData[i];
+        bassVal /= 8;
+        for (let i = 8; i < 32; i++) midVal += freqData[i];
+        midVal /= 24;
+        for (let i = 32; i < 64; i++) highVal += freqData[i];
+        highVal /= 32;
+      }
+
+      // Horizontal lines
+      for (let row = 0; row < rows; row++) {
+        const yBase = row * gridSize;
+        const depth = (row / rows);
+        const tilt = Math.sin(tiltAngle + depth * Math.PI) * 20 * depth;
+        const freqReact = bassVal / 255 * 30 * depth;
+        const y = yBase + tilt + freqReact;
+
+        ctx.beginPath();
+        for (let col = 0; col <= cols; col++) {
+          const xBase = col * gridSize;
+          const xWave = Math.sin(time * 0.03 + col * 0.3 + row * 0.2) * (5 + midVal / 20);
+          const x = xBase + xWave;
+          const px = x - W / 2;
+          const py = y - H / 2;
+          const z = depth * 100;
+          const scale = 1 + z * 0.002 * perspective;
+          const sx = px * scale + W / 2;
+          const sy = py * scale + H / 2;
+          if (col === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        }
+        const alpha = (0.08 + depth * 0.15 + beatDecay * 0.1) * (0.5 + bassVal / 400);
+        ctx.strokeStyle = t.bass + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.lineWidth = 0.5 + depth * 1.5 + (bassVal / 255) * 2;
+        ctx.stroke();
+      }
+
+      // Vertical lines
+      for (let col = 0; col < cols; col++) {
+        const xBase = col * gridSize;
+        ctx.beginPath();
+        for (let row = 0; row <= rows; row++) {
+          const yBase = row * gridSize;
+          const depth = (row / rows);
+          const tilt = Math.cos(tiltAngle + depth * Math.PI) * 15 * depth;
+          const y = yBase + tilt;
+          const px = xBase - W / 2;
+          const py = y - H / 2;
+          const z = depth * 100;
+          const scale = 1 + z * 0.002 * perspective;
+          const sx = px * scale + W / 2;
+          const sy = py * scale + H / 2;
+          if (row === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        }
+        const alpha = (0.06 + col / cols * 0.12 + beatDecay * 0.08) * (0.5 + highVal / 400);
+        ctx.strokeStyle = t.accent + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.lineWidth = 0.5 + (col / cols) * 1 + (highVal / 255) * 1.5;
+        ctx.stroke();
+      }
+
+      // Central glow pulse
+      if (beatDecay > 0.3) {
+        const gR = (30 + beatDecay * 80 + bassVal / 3);
+        const ggrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, gR);
+        ggrad.addColorStop(0, t.particle + Math.floor(beatDecay * 80).toString(16).padStart(2, '0'));
+        ggrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = ggrad;
+        ctx.fillRect(cx - gR, cy - gR, gR * 2, gR * 2);
+      }
+    }
+
+    function drawWaterfall(amp, freqAvg) {
+      if (!freqData) return;
+      const t = themes[currentTheme];
+      const rows = WATERFALL_HEIGHT;
+      const rowH = H / rows;
+
+      // Push new row
+      const row = new Uint8Array(freqData.length);
+      for (let i = 0; i < freqData.length; i++) row[i] = freqData[i];
+      waterfallData.unshift(row);
+      if (waterfallData.length > rows) waterfallData.pop();
+
+      // Draw each row of the waterfall
+      for (let r = 0; r < waterfallData.length; r++) {
+        const fade = 1 - r / rows;
+        const barCount = Math.min(256, waterfallData[r].length);
+        const barW = W / barCount;
+        for (let i = 0; i < barCount; i++) {
+          const val = waterfallData[r][i] || 0;
+          const intensity = (val / 255) * fade;
+          if (intensity < 0.05) continue;
+          const y = r * rowH;
+          const hue = currentTheme === 'neon' ? 160 : currentTheme === 'gold' ? 40 : currentTheme === 'void' ? 270 : currentTheme === 'cyber' ? 200 : 320;
+          const lightness = 40 + (val / 255) * 40;
+          ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${intensity * 0.8})`;
+          ctx.fillRect(i * barW, y, barW - 0.5, rowH + 0.5);
+        }
+      }
+
+      // Moving frequency line at bottom
+      if (freqData) {
+        const lineY = H - 40;
+        ctx.beginPath();
+        ctx.moveTo(0, lineY);
+        for (let i = 0; i < freqData.length; i++) {
+          const x = (i / freqData.length) * W;
+          const barH = (freqData[i] / 255) * 60;
+          ctx.lineTo(x, lineY - barH);
+        }
+        ctx.lineTo(W, lineY);
+        ctx.strokeStyle = t.particle + 'aa';
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
@@ -348,63 +541,71 @@
 
     function drawGalaxyVisual(amp, freqAvg) {
       const t = themes[currentTheme];
-      const arms = 4;
+      const arms = 5;
       const rotSpeed = 0.003 + freqAvg / 8000;
-      // Draw galaxy arms
       for (let arm = 0; arm < arms; arm++) {
         const baseAngle = (arm / arms) * Math.PI * 2 + time * rotSpeed;
         ctx.beginPath();
-        for (let r = 0; r < 300; r += 2) {
-          const angle = baseAngle + r * 0.02;
-          const spiralR = r * (1 + beatDecay * 0.1);
+        for (let r = 0; r < 350; r += 2) {
+          const angle = baseAngle + r * 0.025;
+          const spiralR = r * (1 + beatDecay * 0.15);
           const x = cx + Math.cos(angle) * spiralR * 0.3;
           const y = cy + Math.sin(angle) * spiralR * 0.3;
-          const alpha = Math.max(0, 1 - r / 320) * (0.3 + amp / 300);
-          ctx.lineTo(x, y);
+          const alpha = Math.max(0, 1 - r / 370) * (0.25 + amp / 280);
+          if (r === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = t.bass + Math.floor(alpha * 80).toString(16).padStart(2, '0');
-        ctx.lineWidth = 1 + beatDecay * 2;
+        ctx.strokeStyle = t.bass + Math.floor(alpha * 90).toString(16).padStart(2, '0');
+        ctx.lineWidth = 1.2 + beatDecay * 2.5;
         ctx.stroke();
       }
-      // Core glow
-      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60 + beatDecay * 40);
-      coreGrad.addColorStop(0, t.accent + '66');
-      coreGrad.addColorStop(0.5, t.bass + '22');
+      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 70 + beatDecay * 50);
+      coreGrad.addColorStop(0, t.accent + '88');
+      coreGrad.addColorStop(0.4, t.bass + '33');
       coreGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = coreGrad;
-      ctx.fillRect(cx - 150, cy - 150, 300, 300);
+      ctx.fillRect(cx - 200, cy - 200, 400, 400);
+      // Orbiting particles at core
+      for (let i = 0; i < 20; i++) {
+        const a = (i / 20) * Math.PI * 2 + time * 0.05;
+        const r = 15 + Math.sin(time * 0.1 + i) * 5;
+        const px = cx + Math.cos(a) * r;
+        const py = cy + Math.sin(a) * r * 0.4;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = t.particle + 'cc';
+        ctx.fill();
+      }
     }
 
     function drawWaveVisual(amp, freqAvg) {
       const t = themes[currentTheme];
-      // concentric rings
-      const rings = 8;
+      const rings = 10;
       for (let i = 0; i < rings; i++) {
-        const baseR = 40 + i * 50;
-        const pulseR = baseR + Math.sin(time * 0.05 + i * 0.5) * (10 + amp / 15);
+        const baseR = 35 + i * 55;
+        const pulseR = baseR + Math.sin(time * 0.04 + i * 0.6) * (12 + amp / 12);
         ctx.beginPath();
         ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
-        const alpha = 0.15 + (i / rings) * 0.2 + beatDecay * 0.1;
+        const alpha = 0.12 + (i / rings) * 0.22 + beatDecay * 0.12;
         ctx.strokeStyle = (i % 2 === 0 ? t.bass : t.mid) + Math.floor(alpha * 255).toString(16).padStart(2, '0');
-        ctx.lineWidth = 1 + (rings - i) * 0.3;
+        ctx.lineWidth = 1 + (rings - i) * 0.35;
         ctx.stroke();
       }
-      // frequency arc
       if (freqData) {
-        const arcCount = 64;
+        const arcCount = 72;
         for (let i = 0; i < arcCount; i++) {
           const val = freqData[Math.floor(i * freqData.length / arcCount)] || 0;
           const angle = (i / arcCount) * Math.PI * 2 - Math.PI / 2;
-          const innerR = 160 + (val / 255) * 100;
-          const x1 = cx + Math.cos(angle) * 160;
-          const y1 = cy + Math.sin(angle) * 160;
+          const innerR = 170 + (val / 255) * 120;
+          const x1 = cx + Math.cos(angle) * 170;
+          const y1 = cy + Math.sin(angle) * 170;
           const x2 = cx + Math.cos(angle) * innerR;
           const y2 = cy + Math.sin(angle) * innerR;
           ctx.beginPath();
           ctx.moveTo(x1, y1);
           ctx.lineTo(x2, y2);
-          ctx.strokeStyle = t.particle + Math.floor((val / 255) * 200).toString(16).padStart(2, '0');
-          ctx.lineWidth = 2;
+          ctx.strokeStyle = t.particle + Math.floor((val / 255) * 220).toString(16).padStart(2, '0');
+          ctx.lineWidth = 2 + (val / 255) * 2;
           ctx.stroke();
         }
       }
@@ -412,37 +613,35 @@
 
     function drawStormVisual(amp, freqAvg) {
       const t = themes[currentTheme];
-      // Lightning bolts
-      if (beatDetected || beatDecay > 0.7) {
-        for (let bolt = 0; bolt < 3; bolt++) {
+      if (beatDetected || beatDecay > 0.6) {
+        for (let bolt = 0; bolt < 4; bolt++) {
           let bx = Math.random() * W;
-          const segments = 8 + Math.floor(Math.random() * 6);
+          const segments = 10 + Math.floor(Math.random() * 8);
           ctx.beginPath();
           ctx.moveTo(bx, 0);
           for (let s = 1; s < segments; s++) {
-            bx += (Math.random() - 0.5) * 80;
+            bx += (Math.random() - 0.5) * 90;
             const by = (s / segments) * H;
             ctx.lineTo(bx, by);
           }
-          ctx.strokeStyle = t.bass + 'cc';
-          ctx.lineWidth = 1.5 + Math.random() * 2;
+          ctx.strokeStyle = t.bass + 'dd';
+          ctx.lineWidth = 1.5 + Math.random() * 2.5;
           ctx.shadowColor = t.bass;
-          ctx.shadowBlur = 20;
+          ctx.shadowBlur = 25;
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
       }
-      // Spinning vortex
       const vortexR = 100 + amp / 5;
-      for (let i = 0; i < 60; i++) {
-        const angle = (i / 60) * Math.PI * 6 + time * 0.02;
-        const r = (i / 60) * vortexR;
+      for (let i = 0; i < 80; i++) {
+        const angle = (i / 80) * Math.PI * 7 + time * 0.025;
+        const r = (i / 80) * vortexR;
         const x = cx + Math.cos(angle) * r;
         const y = cy + Math.sin(angle) * r * 0.4;
-        const alpha = (1 - i / 60) * 0.6;
-        const hue = currentTheme === 'neon' ? 160 : currentTheme === 'gold' ? 40 : 270;
+        const alpha = (1 - i / 80) * 0.7;
+        const hue = currentTheme === 'neon' ? 160 : currentTheme === 'gold' ? 40 : currentTheme === 'void' ? 270 : currentTheme === 'cyber' ? 200 : 320;
         ctx.beginPath();
-        ctx.arc(x, y, 2 + Math.sin(time * 0.1 + i) * 1, 0, Math.PI * 2);
+        ctx.arc(x, y, 2 + Math.sin(time * 0.1 + i) * 1.5, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${alpha})`;
         ctx.fill();
       }
@@ -450,48 +649,46 @@
 
     function drawSpiralVisual(amp, freqAvg) {
       const t = themes[currentTheme];
-      const arms = 3;
+      const arms = 4;
       for (let arm = 0; arm < arms; arm++) {
         const baseAngle = (arm / arms) * Math.PI * 2;
         ctx.beginPath();
-        for (let i = 0; i < 400; i++) {
-          const t_val = i / 400;
-          const spiralAngle = baseAngle + t_val * Math.PI * 4 + time * 0.01;
-          const r = t_val * (H * 0.45) * (1 + beatDecay * 0.2);
+        for (let i = 0; i < 500; i++) {
+          const t_val = i / 500;
+          const spiralAngle = baseAngle + t_val * Math.PI * 5 + time * 0.012;
+          const r = t_val * (H * 0.47) * (1 + beatDecay * 0.25);
           const x = cx + Math.cos(spiralAngle) * r;
           const y = cy + Math.sin(spiralAngle) * r;
-          const alpha = (1 - t_val) * 0.4;
+          const alpha = (1 - t_val) * 0.45;
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        const col = arm === 0 ? t.bass : arm === 1 ? t.mid : t.accent;
+        const col = arm === 0 ? t.bass : arm === 1 ? t.mid : arm === 2 ? t.accent : t.particle;
         ctx.strokeStyle = col + Math.floor(alpha * 255).toString(16).padStart(2, '0');
-        ctx.lineWidth = 1.5 + beatDecay;
+        ctx.lineWidth = 1.5 + beatDecay * 1.5;
         ctx.stroke();
       }
     }
 
     function drawVignette() {
-      const vgrad = ctx.createRadialGradient(cx, cy, H * 0.2, cx, cy, H * 0.8);
+      const vgrad = ctx.createRadialGradient(cx, cy, H * 0.18, cx, cy, H * 0.82);
       vgrad.addColorStop(0, 'transparent');
-      vgrad.addColorStop(1, 'rgba(0,0,0,0.7)');
+      vgrad.addColorStop(1, 'rgba(0,0,0,0.72)');
       ctx.fillStyle = vgrad;
       ctx.fillRect(0, 0, W, H);
     }
 
     function drawScanlines() {
-      ctx.fillStyle = 'rgba(0,0,0,0.03)';
-      for (let y = 0; y < H; y += 3) {
-        ctx.fillRect(0, y, W, 1);
-      }
+      ctx.fillStyle = 'rgba(0,0,0,0.025)';
+      for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
     }
 
     function drawBloom(amp) {
-      if (beatDecay < 0.3) return;
-      const bgrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, H * 0.5 * beatDecay);
+      if (beatDecay < 0.25) return;
+      const bgrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, H * 0.55 * beatDecay);
       const t = themes[currentTheme];
-      bgrad.addColorStop(0, t.particle + '11');
-      bgrad.addColorStop(0.5, t.bass + '06');
+      bgrad.addColorStop(0, t.particle + '14');
+      bgrad.addColorStop(0.5, t.bass + '08');
       bgrad.addColorStop(1, 'transparent');
       ctx.fillStyle = bgrad;
       ctx.fillRect(0, 0, W, H);
@@ -499,20 +696,18 @@
 
     function applyShake() {
       if (shakeAmt > 0.1) {
-        const sx = (Math.random() - 0.5) * shakeAmt * 10;
-        const sy = (Math.random() - 0.5) * shakeAmt * 10;
+        const sx = (Math.random() - 0.5) * shakeAmt * 12;
+        const sy = (Math.random() - 0.5) * shakeAmt * 12;
         ctx.translate(sx, sy);
       }
     }
 
     function applyChromatic() {
       if (chromaAmt < 0.1) return;
-      const offset = chromaAmt * 4;
+      const offset = chromaAmt * 5;
       ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = 0.1;
-      // Red channel shift
+      ctx.globalAlpha = 0.12;
       ctx.drawImage(canvas, offset, 0);
-      // Blue shift
       ctx.drawImage(canvas, -offset, 0);
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
@@ -524,7 +719,6 @@
       waveData = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(freqData);
       analyser.getByteTimeDomainData(waveData);
-
       let bass = 0;
       for (let i = 0; i < 8; i++) bass += freqData[i];
       bass /= 8;
@@ -539,17 +733,24 @@
       return { amp, bass, mid, high, freqAvg };
     }
 
+    function updateProgress() {
+      const pb = document.getElementById('progress-bar');
+      const pf = document.getElementById('progress-fill');
+      if (!audioElement || !hasAudioFile) { pb.style.display = 'none'; return; }
+      pb.style.display = 'block';
+      const pct = (audioElement.currentTime / audioElement.duration) * 100;
+      pf.style.width = pct + '%';
+    }
+
     function updateHUD(amp, bass) {
       document.getElementById('amp').textContent = amp.toFixed(1);
       document.getElementById('pcount').textContent = particles.length;
-      // BPM estimate
       if (bass > 40 && time - lastBeatTime < 30) {
         const interval = time - lastBeatTime;
-        if (interval > 10 && interval < 200) {
-          bpmEst = Math.round(3600 / interval);
-        }
+        if (interval > 10 && interval < 200) bpmEst = Math.round(3600 / interval);
       }
       document.getElementById('bpm').textContent = bpmEst > 0 ? bpmEst : '—';
+      updateProgress();
     }
 
     function update() {
@@ -560,38 +761,44 @@
       applyShake();
       drawStars();
       const { amp, bass, mid, high, freqAvg } = analyzeAudio();
-      beatDetected = detectBeat(bass);
+      beatDetected = detectBeat(amp);
 
       if (beatDetected) {
         beatDecay = 1;
+        beatPulse = 1;
         shakeAmt = 0.5;
         chromaAmt = 0.5;
       }
-      beatDecay *= 0.94;
-      shakeAmt *= 0.9;
-      chromaAmt *= 0.92;
+      beatDecay *= 0.93;
+      beatPulse *= 0.88;
+      shakeAmt *= 0.88;
+      chromaAmt *= 0.9;
 
       drawBloom(amp);
-      drawFreqBars();
+
+      // Mode-specific base visuals (freq bars hidden for waterfall)
+      if (mode !== 'waterfall') drawFreqBars();
 
       // Mode-specific visuals
       if (mode === 'galaxy') drawGalaxyVisual(amp, freqAvg);
       else if (mode === 'wave') drawWaveVisual(amp, freqAvg);
       else if (mode === 'storm') drawStormVisual(amp, freqAvg);
       else if (mode === 'spiral') drawSpiralVisual(amp, freqAvg);
+      else if (mode === 'laser') drawLaserGrid(amp, freqAvg);
+      else if (mode === 'waterfall') drawWaterfall(amp, freqAvg);
 
-      // Spawn particles based on audio
+      // Spawn particles based on mode
       if (!paused && freqData) {
-        const spawnCount = mode === 'storm' ? 3 : 2;
+        const spawnCount = mode === 'storm' ? 4 : mode === 'laser' ? 1 : 2;
         for (let s = 0; s < spawnCount; s++) {
           const fi = Math.floor(Math.random() * freqData.length);
           const val = freqData[fi];
           if (val > 20) {
             if (mode === 'galaxy') {
               spawnGalaxyParticles(amp, fi);
-            } else {
+            } else if (mode !== 'laser' && mode !== 'waterfall') {
               const angle = Math.random() * Math.PI * 2;
-              const dist = Math.random() * Math.min(W, H) * 0.35;
+              const dist = Math.random() * Math.min(W, H) * 0.38;
               const px = cx + Math.cos(angle) * dist;
               const py = cy + Math.sin(angle) * dist;
               spawnFromFreq(px, py, fi, val);
@@ -599,12 +806,12 @@
           }
         }
         if (beatDetected) {
-          for (let i = 0; i < 30; i++) {
+          for (let i = 0; i < 40; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const dist = Math.random() * 100;
+            const dist = Math.random() * 120;
             const px = cx + Math.cos(angle) * dist;
             const py = cy + Math.sin(angle) * dist;
-            spawnFromFreq(px, py, 4, 80 + Math.random() * 40);
+            spawnFromFreq(px, py, 4, 80 + Math.random() * 50);
           }
         }
       }
@@ -621,14 +828,14 @@
 
       updateHUD(amp, bass);
 
-      // Auto-cycle modes
+      // Beat-synced auto-cycle (faster on strong beats)
       autoTimer++;
-      if (autoTimer > 600) {
+      const cycleThreshold = beatDetected ? 60 : 600;
+      if (autoTimer > cycleThreshold && bpmEst > 0) {
         autoTimer = 0;
-        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm'];
+        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm', 'laser', 'waterfall'];
         const idx = modes.indexOf(mode);
-        const next = modes[(idx + 1) % modes.length];
-        toggleMode(next);
+        toggleMode(modes[(idx + 1) % modes.length]);
       }
 
       time++;
@@ -639,65 +846,87 @@
       try {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 512;
-        analyser.smoothingTimeConstant = 0.8;
+        analyser.fftSize = fftSize;
+        analyser.smoothingTimeConstant = 0.78;
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         sourceNode = audioCtx.createMediaStreamSource(stream);
         sourceNode.connect(analyser);
         freqData = new Uint8Array(analyser.frequencyBinCount);
         waveData = new Uint8Array(analyser.frequencyBinCount);
         return true;
-      } catch (e) {
-        return false;
-      }
+      } catch (e) { return false; }
     }
 
     function loadAudioFile(file) {
-      if (audioCtx) {
-        audioCtx.close();
-        audioCtx = null;
-      }
+      if (audioCtx) { audioCtx.close(); audioCtx = null; }
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = fftSize;
+      analyser.smoothingTimeConstant = 0.78;
 
       audioElement = new Audio();
       audioElement.src = URL.createObjectURL(file);
-      audioElement.loop = true;
+      audioElement.loop = loopEnabled;
       sourceNode = audioCtx.createMediaElementSource(audioElement);
       sourceNode.connect(analyser);
       audioCtx.connect(audioCtx.destination);
       audioElement.play();
       freqData = new Uint8Array(analyser.frequencyBinCount);
       waveData = new Uint8Array(analyser.frequencyBinCount);
+      hasAudioFile = true;
+
+      const nameEl = document.getElementById('audio-name');
+      nameEl.textContent = file.name;
+      nameEl.style.display = 'block';
+      document.getElementById('progress-bar').style.display = 'block';
+
+      audioElement.addEventListener('ended', () => {
+        if (!loopEnabled) {
+          hasAudioFile = false;
+          document.getElementById('progress-bar').style.display = 'none';
+        }
+      });
+    }
+
+    function seekAudio(e) {
+      if (!audioElement || !hasAudioFile) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      audioElement.currentTime = pct * audioElement.duration;
     }
 
     let hasAudio = false;
     async function ensureAudio() {
-      if (!hasAudio) {
-        hasAudio = await initMic();
-      }
+      if (!hasAudio) hasAudio = await initMic();
     }
 
-    function toggleFile() {
-      document.getElementById('file-input').click();
-    }
+    function toggleFile() { document.getElementById('file-input').click(); }
     document.getElementById('file-input').addEventListener('change', (e) => {
-      if (e.target.files[0]) {
-        hasAudio = true;
-        loadAudioFile(e.target.files[0]);
-      }
+      if (e.target.files[0]) { hasAudio = true; loadAudioFile(e.target.files[0]); }
     });
+
+    function toggleLoop() {
+      loopEnabled = !loopEnabled;
+      const btn = document.getElementById('btnLoop');
+      if (loopEnabled) {
+        btn.classList.add('loop-on');
+        btn.textContent = 'LOOP';
+      } else {
+        btn.classList.remove('loop-on');
+        btn.textContent = 'ONCE';
+      }
+      if (audioElement) audioElement.loop = loopEnabled;
+    }
 
     function toggleMode(m) {
       mode = m;
-      const btns = { particles: 'btnParticles', spiral: 'btnSpiral', galaxy: 'btnGalaxy', wave: 'btnWave', storm: 'btnStorm' };
-      Object.values(btns).forEach(id => document.getElementById(id).classList.remove('active'));
+      const btns = { particles: 'btnParticles', spiral: 'btnSpiral', galaxy: 'btnGalaxy', wave: 'btnWave', storm: 'btnStorm', laser: 'btnLaser', waterfall: 'btnWaterfall' };
+      Object.values(btns).forEach(id => { const b = document.getElementById(id); if (b) b.classList.remove('active'); });
       const btn = document.getElementById(btns[m]);
       if (btn) btn.classList.add('active');
       particles = [];
       autoTimer = 0;
+      waterfallData = [];
     }
 
     const themeKeys = Object.keys(themes);
@@ -705,30 +934,29 @@
     function cycleTheme() {
       themeIdx = (themeIdx + 1) % themeKeys.length;
       currentTheme = themeKeys[themeIdx];
+      document.getElementById('theme-indicator').textContent = themeDisplayNames[currentTheme];
+      initStars();
     }
 
     window.addEventListener('keydown', async (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        if (!hasAudio) {
-          await ensureAudio();
-        }
+        if (!hasAudio) { hasAudio = await initMic(); }
         if (audioElement) {
           if (paused) { audioElement.play(); paused = false; }
           else { audioElement.pause(); paused = true; }
         } else if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
-          paused = false;
-        } else if (!hasAudio) {
-          hasAudio = await initMic();
-        }
+          audioCtx.resume(); paused = false;
+        } else if (!hasAudio) { hasAudio = await initMic(); }
       }
       if (e.key === 'm' || e.key === 'M') {
-        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm'];
+        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm', 'laser', 'waterfall'];
         const idx = modes.indexOf(mode);
         toggleMode(modes[(idx + 1) % modes.length]);
       }
       if (e.key === 't' || e.key === 'T') cycleTheme();
+      if (e.key === 'p' || e.key === 'P') spawnBurst();
+      if (e.key === 'l' || e.key === 'L') toggleLoop();
     });
 
     window.addEventListener('resize', resize);
@@ -741,18 +969,15 @@
       e.preventDefault();
       dropOverlay.classList.remove('show');
       const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('audio/')) {
-        hasAudio = true;
-        loadAudioFile(file);
-      }
+      if (file && file.type.startsWith('audio/')) { hasAudio = true; loadAudioFile(file); }
     });
 
-    // Click anywhere to init audio (browser autoplay policy)
     window.addEventListener('click', async () => {
-      if (!hasAudio) {
-        hasAudio = await initMic();
-      }
+      if (!hasAudio) hasAudio = await initMic();
     }, { once: true });
+
+    // Init loop button state
+    document.getElementById('btnLoop').classList.add('loop-on');
 
     resize();
     update();
