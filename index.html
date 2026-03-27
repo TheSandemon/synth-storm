@@ -182,6 +182,8 @@
     <button class="ctrl-btn" id="btnStorm" onclick="toggleMode('storm')">STORM</button>
     <button class="ctrl-btn" id="btnLaser" onclick="toggleMode('laser')">LASER</button>
     <button class="ctrl-btn" id="btnWaterfall" onclick="toggleMode('waterfall')">WATERFALL</button>
+    <button class="ctrl-btn" id="btnSonar" onclick="toggleMode('sonar')">SONAR</button>
+    <button class="ctrl-btn" id="btnEq" onclick="toggleMode('eq')">EQ</button>
     <button class="ctrl-btn" onclick="toggleFile()">FILE</button>
     <button class="ctrl-btn" onclick="toggleLoop()" id="btnLoop">LOOP</button>
     <button class="ctrl-btn" onclick="spawnBurst()">BURST</button>
@@ -199,9 +201,10 @@
       gold: { bg: '#0a0a0a', particle: '#D4A853', accent: '#ff8800', bass: '#D4A853', mid: '#ffcc00', high: '#ffffff', line: '#D4A85333', wave: '#D4A853' },
       void: { bg: '#050508', particle: '#8844ff', accent: '#ff4488', bass: '#4488ff', mid: '#8844ff', high: '#ffffff', line: '#8844ff33', wave: '#8844ff' },
       cyber: { bg: '#080810', particle: '#00ccff', accent: '#ff3300', bass: '#00ccff', mid: '#00ffcc', high: '#ffffff', line: '#00ccff33', wave: '#00ccff' },
-      plasma: { bg: '#0a000a', particle: '#ff4488', accent: '#ffaa00', bass: '#ff44ff', mid: '#ff8800', high: '#ffffff', line: '#ff448833', wave: '#ff44ff' }
+      plasma: { bg: '#0a000a', particle: '#ff4488', accent: '#ffaa00', bass: '#ff44ff', mid: '#ff8800', high: '#ffffff', line: '#ff448833', wave: '#ff44ff' },
+      aurora: { bg: '#020a0d', particle: '#00e5cc', accent: '#00ff88', bass: '#00aacc', mid: '#00e5cc', high: '#aaffee', line: '#00e5cc33', wave: '#00e5cc' }
     };
-    const themeDisplayNames = { neon: 'NEON', gold: 'GOLD', void: 'VOID', cyber: 'CYBER', plasma: 'PLASMA' };
+    const themeDisplayNames = { neon: 'NEON', gold: 'GOLD', void: 'VOID', cyber: 'CYBER', plasma: 'PLASMA', aurora: 'AURORA' };
     let currentTheme = 'neon';
     let mode = 'particles';
     let paused = false;
@@ -539,6 +542,137 @@
       }
     }
 
+    function drawSonarVisual(amp, freqAvg) {
+      const t = themes[currentTheme];
+      const maxR = Math.min(W, H) * 0.46;
+      const rings = 6;
+      for (let i = 1; i <= rings; i++) {
+        const r = (i / rings) * maxR;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = t.particle + '22';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      // Radial grid lines
+      for (let a = 0; a < 12; a++) {
+        const angle = (a / 12) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(angle) * maxR, cy + Math.sin(angle) * maxR);
+        ctx.strokeStyle = t.particle + '15';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      }
+      // Sweep
+      const sweepAngle = (time * 0.018) % (Math.PI * 2);
+      const sweepGrad = ctx.createConicalGradient ? null : null;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, maxR, sweepAngle - 0.5, sweepAngle);
+      ctx.closePath();
+      const sg = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+      sg.addColorStop(0, t.particle + '44');
+      sg.addColorStop(1, t.particle + '00');
+      ctx.fillStyle = sg;
+      ctx.fill();
+      // Sweep line
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(sweepAngle) * maxR, cy + Math.sin(sweepAngle) * maxR);
+      ctx.strokeStyle = t.particle + 'cc';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Frequency-reactive dots on sweep
+      if (freqData) {
+        const bands = 64;
+        for (let b = 0; b < bands; b++) {
+          const val = freqData[Math.floor(b * freqData.length / bands)] || 0;
+          if (val < 30) continue;
+          const angle = sweepAngle - 0.4 + (b / bands) * 0.8;
+          const dist = (val / 255) * maxR;
+          const px = cx + Math.cos(angle) * dist;
+          const py = cy + Math.sin(angle) * dist;
+          const hue = currentTheme === 'neon' ? 160 : currentTheme === 'gold' ? 40 : currentTheme === 'void' ? 270 : currentTheme === 'cyber' ? 200 : currentTheme === 'plasma' ? 320 : 175;
+          ctx.beginPath();
+          ctx.arc(px, py, 1.5 + (val / 255) * 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${hue}, 100%, 65%, ${(val / 255) * 0.9})`;
+          ctx.fill();
+        }
+      }
+      // Center glow
+      const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30 + beatDecay * 40);
+      cg.addColorStop(0, t.particle + '88');
+      cg.addColorStop(1, t.particle + '00');
+      ctx.fillStyle = cg;
+      ctx.fillRect(cx - 60, cy - 60, 120, 120);
+      // Ring labels
+      ctx.fillStyle = t.particle + '44';
+      ctx.font = '9px Space Mono';
+      ctx.fillText('BASS', cx + maxR * 0.2 + 4, cy - maxR * 0.55 - 4);
+      ctx.fillText('MID', cx + maxR * 0.5 + 4, cy - maxR * 0.3 - 4);
+      ctx.fillText('HIGH', cx + maxR * 0.78 + 4, cy - maxR * 0.1 - 4);
+    }
+
+    function drawEQVisual(amp, freqAvg) {
+      if (!freqData) return;
+      const t = themes[currentTheme];
+      const bars = 32;
+      const barW = W / bars;
+      const maxH = H * 0.38;
+      // EQ bands: bass (0-8), low-mid (8-16), mid (16-32), upper-mid (32-64), high (64-128)
+      const bandLabels = ['20','60','150','400','1k','3k','8k','16k','20k'];
+      const bandRanges = [0, 2, 4, 8, 14, 22, 30, 38, 45, 52];
+      for (let b = 0; b < bars; b++) {
+        let sum = 0;
+        const rStart = bandRanges[b];
+        const rEnd = bandRanges[b + 1];
+        for (let i = rStart; i < rEnd && i < freqData.length; i++) sum += freqData[i];
+        const count = rEnd - rStart;
+        const val = sum / (count || 1);
+        const barH = (val / 255) * maxH;
+        const x = b * barW;
+        const y = cy + 20;
+        const hue = b < 4 ? (currentTheme === 'aurora' ? 185 : 195) : b < 10 ? (currentTheme === 'aurora' ? 175 : 160) : b < 18 ? (currentTheme === 'aurora' ? 165 : 140) : (currentTheme === 'aurora' ? 155 : 120);
+        const lightness = 50 + (val / 255) * 30;
+        ctx.fillStyle = `hsla(${hue}, 90%, ${lightness}%, 0.8)`;
+        ctx.fillRect(x + 1, y, barW - 2, barH);
+        // Peak hold
+        if (!window._eqPeaks) window._eqPeaks = new Array(bars).fill(0);
+        if (val > window._eqPeaks[b]) window._eqPeaks[b] = val;
+        else window._eqPeaks[b] *= 0.98;
+        const peakH = (window._eqPeaks[b] / 255) * maxH;
+        ctx.fillStyle = t.high + '99';
+        ctx.fillRect(x + 1, y - peakH, barW - 2, 2);
+      }
+      // EQ curve line
+      ctx.beginPath();
+      for (let b = 0; b < bars; b++) {
+        let sum = 0;
+        const rStart = bandRanges[b];
+        const rEnd = bandRanges[b + 1];
+        for (let i = rStart; i < rEnd && i < freqData.length; i++) sum += freqData[i];
+        const count = rEnd - rStart;
+        const val = sum / (count || 1);
+        const cx_b = b * barW + barW / 2;
+        const cy_b = cy + 20 - (val / 255) * maxH;
+        if (b === 0) ctx.moveTo(cx_b, cy_b);
+        else ctx.lineTo(cx_b, cy_b);
+      }
+      ctx.strokeStyle = t.particle + 'aa';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Labels
+      ctx.fillStyle = t.particle + '55';
+      ctx.font = '9px Space Mono';
+      const labels = ['SUB', 'BASS', 'LOW', 'MID', 'HIGH'];
+      const labelPositions = [0, 3, 8, 16, 26];
+      for (let l = 0; l < labels.length; l++) {
+        const lx = labelPositions[l] * barW + barW / 2;
+        ctx.fillText(labels[l], lx - 10, cy + 36);
+      }
+    }
+
     function drawGalaxyVisual(amp, freqAvg) {
       const t = themes[currentTheme];
       const arms = 5;
@@ -776,8 +910,8 @@
 
       drawBloom(amp);
 
-      // Mode-specific base visuals (freq bars hidden for waterfall)
-      if (mode !== 'waterfall') drawFreqBars();
+      // Mode-specific base visuals (freq bars hidden for waterfall and eq)
+      if (mode !== 'waterfall' && mode !== 'eq') drawFreqBars();
 
       // Mode-specific visuals
       if (mode === 'galaxy') drawGalaxyVisual(amp, freqAvg);
@@ -786,6 +920,8 @@
       else if (mode === 'spiral') drawSpiralVisual(amp, freqAvg);
       else if (mode === 'laser') drawLaserGrid(amp, freqAvg);
       else if (mode === 'waterfall') drawWaterfall(amp, freqAvg);
+      else if (mode === 'sonar') drawSonarVisual(amp, freqAvg);
+      else if (mode === 'eq') drawEQVisual(amp, freqAvg);
 
       // Spawn particles based on mode
       if (!paused && freqData) {
@@ -796,7 +932,7 @@
           if (val > 20) {
             if (mode === 'galaxy') {
               spawnGalaxyParticles(amp, fi);
-            } else if (mode !== 'laser' && mode !== 'waterfall') {
+            } else if (mode !== 'laser' && mode !== 'waterfall' && mode !== 'sonar' && mode !== 'eq') {
               const angle = Math.random() * Math.PI * 2;
               const dist = Math.random() * Math.min(W, H) * 0.38;
               const px = cx + Math.cos(angle) * dist;
@@ -833,7 +969,7 @@
       const cycleThreshold = beatDetected ? 60 : 600;
       if (autoTimer > cycleThreshold && bpmEst > 0) {
         autoTimer = 0;
-        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm', 'laser', 'waterfall'];
+        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm', 'laser', 'waterfall', 'sonar', 'eq'];
         const idx = modes.indexOf(mode);
         toggleMode(modes[(idx + 1) % modes.length]);
       }
@@ -920,7 +1056,7 @@
 
     function toggleMode(m) {
       mode = m;
-      const btns = { particles: 'btnParticles', spiral: 'btnSpiral', galaxy: 'btnGalaxy', wave: 'btnWave', storm: 'btnStorm', laser: 'btnLaser', waterfall: 'btnWaterfall' };
+      const btns = { particles: 'btnParticles', spiral: 'btnSpiral', galaxy: 'btnGalaxy', wave: 'btnWave', storm: 'btnStorm', laser: 'btnLaser', waterfall: 'btnWaterfall', sonar: 'btnSonar', eq: 'btnEq' };
       Object.values(btns).forEach(id => { const b = document.getElementById(id); if (b) b.classList.remove('active'); });
       const btn = document.getElementById(btns[m]);
       if (btn) btn.classList.add('active');
@@ -950,7 +1086,7 @@
         } else if (!hasAudio) { hasAudio = await initMic(); }
       }
       if (e.key === 'm' || e.key === 'M') {
-        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm', 'laser', 'waterfall'];
+        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm', 'laser', 'waterfall', 'sonar', 'eq'];
         const idx = modes.indexOf(mode);
         toggleMode(modes[(idx + 1) % modes.length]);
       }
@@ -984,3 +1120,5 @@
   </script>
 </body>
 </html>
+< ! - -   0 3 / 2 7 / 2 0 2 6   1 4 : 3 6 : 1 2   - - >  
+ 
