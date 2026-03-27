@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SYNTH STORM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      overflow: hidden;
+      font-family: 'Space Mono', monospace;
+      color: #D4A853;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+      position: fixed;
+      top: 0; left: 0;
+    }
+    #ui {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      background: linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    #title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      color: #00ff88;
+      text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff8866;
+      letter-spacing: 4px;
+    }
+    #stats {
+      display: flex;
+      gap: 24px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .stat-label { color: #666; }
+    .stat-value { color: #D4A853; }
+    #controls {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      z-index: 10;
+      background: linear-gradient(to top, rgba(10,10,10,0.9) 0%, transparent 100%);
+    }
+    .ctrl-btn {
+      background: rgba(212, 168, 83, 0.1);
+      border: 1px solid #D4A85344;
+      color: #D4A853;
+      padding: 8px 16px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ctrl-btn:hover {
+      background: rgba(212, 168, 83, 0.25);
+      border-color: #D4A853;
+      box-shadow: 0 0 16px #D4A85344;
+    }
+    .ctrl-btn.active {
+      background: rgba(0, 255, 136, 0.15);
+      border-color: #00ff88;
+      color: #00ff88;
+      box-shadow: 0 0 16px #00ff8844;
+    }
+    #drop-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 255, 136, 0.05);
+      border: 2px dashed #00ff88;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      color: #00ff88;
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px #00ff88;
+    }
+    #drop-overlay.show { display: flex; }
+    #mode-label {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #444;
+      z-index: 10;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="ui">
+    <div id="title">SYNTH STORM</div>
+    <div id="stats">
+      <span><span class="stat-label">BPM </span><span class="stat-value" id="bpm">—</span></span>
+      <span><span class="stat-label">AMP </span><span class="stat-value" id="amp">—</span></span>
+      <span><span class="stat-label">PARTICLES </span><span class="stat-value" id="pcount">0</span></span>
+    </div>
+  </div>
+  <div id="mode-label">M: MODE &nbsp;|&nbsp; T: THEME &nbsp;|&nbsp; SPACE: PAUSE</div>
+  <div id="controls">
+    <button class="ctrl-btn active" id="btnParticles" onclick="toggleMode('particles')">PARTICLES</button>
+    <button class="ctrl-btn" id="btnSpiral" onclick="toggleMode('spiral')">SPIRAL</button>
+    <button class="ctrl-btn" id="btnGalaxy" onclick="toggleMode('galaxy')">GALAXY</button>
+    <button class="ctrl-btn" id="btnWave" onclick="toggleMode('wave')">WAVE</button>
+    <button class="ctrl-btn" id="btnStorm" onclick="toggleMode('storm')">STORM</button>
+    <button class="ctrl-btn" onclick="toggleFile()">FILE</button>
+    <button class="ctrl-btn" onclick="spawnBurst()">BURST</button>
+  </div>
+  <div id="drop-overlay" id="drop-overlay">DROP AUDIO FILE</div>
+  <input type="file" id="file-input" accept="audio/*" style="display:none">
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    let W, H, cx, cy;
+
+    const themes = {
+      neon: { bg: '#0a0a0a', particle: '#00ff88', accent: '#ff00ff', bass: '#00ffff', mid: '#00ff88', high: '#ffffff', line: '#00ff8833' },
+      gold: { bg: '#0a0a0a', particle: '#D4A853', accent: '#ff8800', bass: '#D4A853', mid: '#ffcc00', high: '#ffffff', line: '#D4A85333' },
+      void: { bg: '#050508', particle: '#8844ff', accent: '#ff4488', bass: '#4488ff', mid: '#8844ff', high: '#ffffff', line: '#8844ff33' },
+      cyber: { bg: '#080810', particle: '#00ccff', accent: '#ff3300', bass: '#00ccff', mid: '#00ffcc', high: '#ffffff', line: '#00ccff33' }
+    };
+    let currentTheme = 'neon';
+    let mode = 'particles';
+    let paused = false;
+    let audioCtx, analyser, sourceNode, audioElement;
+    let freqData, waveData;
+    let particles = [];
+    let stars = [];
+    let time = 0;
+    let beatDetected = false;
+    let beatDecay = 0;
+    let bassHistory = [];
+    let bpmEst = 0;
+    let lastBeatTime = 0;
+    let shakeAmt = 0;
+    let chromaAmt = 0;
+    let autoMode = 'particles';
+    let autoTimer = 0;
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      cx = W / 2;
+      cy = H / 2;
+      initStars();
+    }
+    function initStars() {
+      stars = [];
+      for (let i = 0; i < 200; i++) {
+        stars.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          z: Math.random() * 3 + 0.5,
+          brightness: Math.random()
+        });
+      }
+    }
+
+    class Particle {
+      constructor(x, y, vx, vy, color, size, life) {
+        this.x = x; this.y = y;
+        this.vx = vx; this.vy = vy;
+        this.color = color;
+        this.size = size;
+        this.life = life;
+        this.maxLife = life;
+        this.trail = [];
+      }
+      update(amp, freq) {
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > 12) this.trail.shift();
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+        if (amp > 0.15) {
+          this.vx += (Math.random() - 0.5) * amp * 8;
+          this.vy += (Math.random() - 0.5) * amp * 8;
+        }
+        this.life -= 1;
+        this.size *= 0.99;
+      }
+      draw() {
+        const alpha = Math.max(0, this.life / this.maxLife);
+        // trail
+        if (this.trail.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(this.trail[0].x, this.trail[0].y);
+          for (let t of this.trail) ctx.lineTo(t.x, t.y);
+          ctx.lineTo(this.x, this.y);
+          ctx.strokeStyle = this.color + Math.floor(alpha * 60).toString(16).padStart(2, '0');
+          ctx.lineWidth = this.size * 0.5;
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.fill();
+        // glow
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+        const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2);
+        grd.addColorStop(0, this.color + '44');
+        grd.addColorStop(1, this.color + '00');
+        ctx.fillStyle = grd;
+        ctx.fill();
+      }
+      isDead() { return this.life <= 0 || this.size < 0.3; }
+    }
+
+    function getColor(energy, bandIndex) {
+      const t = themes[currentTheme];
+      if (bandIndex < 8) return t.bass;
+      if (bandIndex < 24) return t.mid;
+      return t.high;
+    }
+
+    function spawnFromFreq(x, y, freq, amp) {
+      if (amp < 20) return;
+      const t = themes[currentTheme];
+      const angle = Math.random() * Math.PI * 2;
+      const speed = amp / 12;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      const size = Math.min(4 + amp / 20, 8);
+      const life = 30 + amp * 2;
+      const color = getColor(amp, freq);
+      particles.push(new Particle(x, y, vx, vy, color, size, life));
+    }
+
+    function spawnBurst() {
+      const t = themes[currentTheme];
+      const count = 80 + Math.floor(Math.random() * 60);
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+        const speed = 2 + Math.random() * 6;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        const colors = [t.particle, t.accent, t.bass, '#ffffff'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        particles.push(new Particle(cx, cy, vx, vy, color, 1.5 + Math.random() * 3, 60 + Math.random() * 60));
+      }
+      beatDecay = 1;
+    }
+
+    function spawnGalaxyParticles(amp, freq) {
+      const t = themes[currentTheme];
+      if (amp < 15 || freq % 4 !== 0) return;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 20 + Math.random() * 60;
+      const x = cx + Math.cos(angle) * dist;
+      const y = cy + Math.sin(angle) * dist;
+      const spin = Math.atan2(y - cy, x - cx) + Math.PI / 2;
+      const speed = 0.5 + amp / 40;
+      const vx = Math.cos(spin) * speed;
+      const vy = Math.sin(spin) * speed;
+      particles.push(new Particle(x, y, vx, vy, t.bass, 1 + amp / 50, 80 + amp));
+    }
+
+    function detectBeat(amp) {
+      bassHistory.push(amp);
+      if (bassHistory.length > 60) bassHistory.shift();
+      if (bassHistory.length < 10) return false;
+      const avg = bassHistory.reduce((a, b) => a + b, 0) / bassHistory.length;
+      const variance = bassHistory.reduce((a, b) => a + (b - avg) ** 2, 0) / bassHistory.length;
+      const threshold = avg + Math.sqrt(variance) * 1.8;
+      if (amp > threshold && amp > 30 && time - lastBeatTime > 10) {
+        lastBeatTime = time;
+        return true;
+      }
+      return false;
+    }
+
+    function drawStars() {
+      const t = themes[currentTheme];
+      for (let s of stars) {
+        s.brightness += (Math.random() - 0.5) * 0.05;
+        s.brightness = Math.max(0.1, Math.min(1, s.brightness));
+        const twinkle = s.brightness * (0.3 + beatDecay * 0.3);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.z * (0.5 + twinkle * 0.5), 0, Math.PI * 2);
+        ctx.fillStyle = t.high + Math.floor(twinkle * 100).toString(16).padStart(2, '0');
+        ctx.fill();
+      }
+    }
+
+    function drawFreqBars() {
+      if (!freqData) return;
+      const t = themes[currentTheme];
+      const bars = 128;
+      const barW = W / bars;
+      const step = Math.floor(freqData.length / bars);
+      for (let i = 0; i < bars; i++) {
+        const val = freqData[i * step] || 0;
+        const barH = (val / 255) * H * 0.55;
+        const x = i * barW;
+        const y = cy - barH / 2;
+        const alpha = 0.3 + (val / 255) * 0.5;
+        const hue = currentTheme === 'neon' ? 160 : currentTheme === 'gold' ? 40 : currentTheme === 'void' ? 270 : 200;
+        const lightness = 50 + (val / 255) * 30;
+        ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${alpha})`;
+        ctx.fillRect(x, y, barW - 1, barH);
+        // glow top
+        if (val > 150) {
+          ctx.fillStyle = `hsla(${hue}, 100%, 80%, ${(val / 255) * 0.4})`;
+          ctx.fillRect(x, y - 4, barW - 1, 4);
+        }
+      }
+      // wave line
+      if (waveData) {
+        ctx.beginPath();
+        ctx.moveTo(0, cy);
+        for (let i = 0; i < waveData.length; i++) {
+          const x = (i / waveData.length) * W;
+          const y = cy + (waveData[i] - 128) * 0.8;
+          ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = t.particle + '66';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+
+    function drawGalaxyVisual(amp, freqAvg) {
+      const t = themes[currentTheme];
+      const arms = 4;
+      const rotSpeed = 0.003 + freqAvg / 8000;
+      // Draw galaxy arms
+      for (let arm = 0; arm < arms; arm++) {
+        const baseAngle = (arm / arms) * Math.PI * 2 + time * rotSpeed;
+        ctx.beginPath();
+        for (let r = 0; r < 300; r += 2) {
+          const angle = baseAngle + r * 0.02;
+          const spiralR = r * (1 + beatDecay * 0.1);
+          const x = cx + Math.cos(angle) * spiralR * 0.3;
+          const y = cy + Math.sin(angle) * spiralR * 0.3;
+          const alpha = Math.max(0, 1 - r / 320) * (0.3 + amp / 300);
+          ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = t.bass + Math.floor(alpha * 80).toString(16).padStart(2, '0');
+        ctx.lineWidth = 1 + beatDecay * 2;
+        ctx.stroke();
+      }
+      // Core glow
+      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60 + beatDecay * 40);
+      coreGrad.addColorStop(0, t.accent + '66');
+      coreGrad.addColorStop(0.5, t.bass + '22');
+      coreGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = coreGrad;
+      ctx.fillRect(cx - 150, cy - 150, 300, 300);
+    }
+
+    function drawWaveVisual(amp, freqAvg) {
+      const t = themes[currentTheme];
+      // concentric rings
+      const rings = 8;
+      for (let i = 0; i < rings; i++) {
+        const baseR = 40 + i * 50;
+        const pulseR = baseR + Math.sin(time * 0.05 + i * 0.5) * (10 + amp / 15);
+        ctx.beginPath();
+        ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
+        const alpha = 0.15 + (i / rings) * 0.2 + beatDecay * 0.1;
+        ctx.strokeStyle = (i % 2 === 0 ? t.bass : t.mid) + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.lineWidth = 1 + (rings - i) * 0.3;
+        ctx.stroke();
+      }
+      // frequency arc
+      if (freqData) {
+        const arcCount = 64;
+        for (let i = 0; i < arcCount; i++) {
+          const val = freqData[Math.floor(i * freqData.length / arcCount)] || 0;
+          const angle = (i / arcCount) * Math.PI * 2 - Math.PI / 2;
+          const innerR = 160 + (val / 255) * 100;
+          const x1 = cx + Math.cos(angle) * 160;
+          const y1 = cy + Math.sin(angle) * 160;
+          const x2 = cx + Math.cos(angle) * innerR;
+          const y2 = cy + Math.sin(angle) * innerR;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = t.particle + Math.floor((val / 255) * 200).toString(16).padStart(2, '0');
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+    }
+
+    function drawStormVisual(amp, freqAvg) {
+      const t = themes[currentTheme];
+      // Lightning bolts
+      if (beatDetected || beatDecay > 0.7) {
+        for (let bolt = 0; bolt < 3; bolt++) {
+          let bx = Math.random() * W;
+          const segments = 8 + Math.floor(Math.random() * 6);
+          ctx.beginPath();
+          ctx.moveTo(bx, 0);
+          for (let s = 1; s < segments; s++) {
+            bx += (Math.random() - 0.5) * 80;
+            const by = (s / segments) * H;
+            ctx.lineTo(bx, by);
+          }
+          ctx.strokeStyle = t.bass + 'cc';
+          ctx.lineWidth = 1.5 + Math.random() * 2;
+          ctx.shadowColor = t.bass;
+          ctx.shadowBlur = 20;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+      }
+      // Spinning vortex
+      const vortexR = 100 + amp / 5;
+      for (let i = 0; i < 60; i++) {
+        const angle = (i / 60) * Math.PI * 6 + time * 0.02;
+        const r = (i / 60) * vortexR;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r * 0.4;
+        const alpha = (1 - i / 60) * 0.6;
+        const hue = currentTheme === 'neon' ? 160 : currentTheme === 'gold' ? 40 : 270;
+        ctx.beginPath();
+        ctx.arc(x, y, 2 + Math.sin(time * 0.1 + i) * 1, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${alpha})`;
+        ctx.fill();
+      }
+    }
+
+    function drawSpiralVisual(amp, freqAvg) {
+      const t = themes[currentTheme];
+      const arms = 3;
+      for (let arm = 0; arm < arms; arm++) {
+        const baseAngle = (arm / arms) * Math.PI * 2;
+        ctx.beginPath();
+        for (let i = 0; i < 400; i++) {
+          const t_val = i / 400;
+          const spiralAngle = baseAngle + t_val * Math.PI * 4 + time * 0.01;
+          const r = t_val * (H * 0.45) * (1 + beatDecay * 0.2);
+          const x = cx + Math.cos(spiralAngle) * r;
+          const y = cy + Math.sin(spiralAngle) * r;
+          const alpha = (1 - t_val) * 0.4;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        const col = arm === 0 ? t.bass : arm === 1 ? t.mid : t.accent;
+        ctx.strokeStyle = col + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.lineWidth = 1.5 + beatDecay;
+        ctx.stroke();
+      }
+    }
+
+    function drawVignette() {
+      const vgrad = ctx.createRadialGradient(cx, cy, H * 0.2, cx, cy, H * 0.8);
+      vgrad.addColorStop(0, 'transparent');
+      vgrad.addColorStop(1, 'rgba(0,0,0,0.7)');
+      ctx.fillStyle = vgrad;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function drawScanlines() {
+      ctx.fillStyle = 'rgba(0,0,0,0.03)';
+      for (let y = 0; y < H; y += 3) {
+        ctx.fillRect(0, y, W, 1);
+      }
+    }
+
+    function drawBloom(amp) {
+      if (beatDecay < 0.3) return;
+      const bgrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, H * 0.5 * beatDecay);
+      const t = themes[currentTheme];
+      bgrad.addColorStop(0, t.particle + '11');
+      bgrad.addColorStop(0.5, t.bass + '06');
+      bgrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = bgrad;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function applyShake() {
+      if (shakeAmt > 0.1) {
+        const sx = (Math.random() - 0.5) * shakeAmt * 10;
+        const sy = (Math.random() - 0.5) * shakeAmt * 10;
+        ctx.translate(sx, sy);
+      }
+    }
+
+    function applyChromatic() {
+      if (chromaAmt < 0.1) return;
+      const offset = chromaAmt * 4;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 0.1;
+      // Red channel shift
+      ctx.drawImage(canvas, offset, 0);
+      // Blue shift
+      ctx.drawImage(canvas, -offset, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+    }
+
+    function analyzeAudio() {
+      if (!analyser) return { amp: 0, freqAvg: 0, bass: 0 };
+      freqData = new Uint8Array(analyser.frequencyBinCount);
+      waveData = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(freqData);
+      analyser.getByteTimeDomainData(waveData);
+
+      let bass = 0;
+      for (let i = 0; i < 8; i++) bass += freqData[i];
+      bass /= 8;
+      let mid = 0;
+      for (let i = 8; i < 32; i++) mid += freqData[i];
+      mid /= 24;
+      let high = 0;
+      for (let i = 32; i < 64; i++) high += freqData[i];
+      high /= 32;
+      const amp = (bass + mid + high) / 3;
+      const freqAvg = (bass * 1 + mid * 2 + high * 3) / 6;
+      return { amp, bass, mid, high, freqAvg };
+    }
+
+    function updateHUD(amp, bass) {
+      document.getElementById('amp').textContent = amp.toFixed(1);
+      document.getElementById('pcount').textContent = particles.length;
+      // BPM estimate
+      if (bass > 40 && time - lastBeatTime < 30) {
+        const interval = time - lastBeatTime;
+        if (interval > 10 && interval < 200) {
+          bpmEst = Math.round(3600 / interval);
+        }
+      }
+      document.getElementById('bpm').textContent = bpmEst > 0 ? bpmEst : '—';
+    }
+
+    function update() {
+      const t = themes[currentTheme];
+      ctx.fillStyle = t.bg;
+      ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      applyShake();
+      drawStars();
+      const { amp, bass, mid, high, freqAvg } = analyzeAudio();
+      beatDetected = detectBeat(bass);
+
+      if (beatDetected) {
+        beatDecay = 1;
+        shakeAmt = 0.5;
+        chromaAmt = 0.5;
+      }
+      beatDecay *= 0.94;
+      shakeAmt *= 0.9;
+      chromaAmt *= 0.92;
+
+      drawBloom(amp);
+      drawFreqBars();
+
+      // Mode-specific visuals
+      if (mode === 'galaxy') drawGalaxyVisual(amp, freqAvg);
+      else if (mode === 'wave') drawWaveVisual(amp, freqAvg);
+      else if (mode === 'storm') drawStormVisual(amp, freqAvg);
+      else if (mode === 'spiral') drawSpiralVisual(amp, freqAvg);
+
+      // Spawn particles based on audio
+      if (!paused && freqData) {
+        const spawnCount = mode === 'storm' ? 3 : 2;
+        for (let s = 0; s < spawnCount; s++) {
+          const fi = Math.floor(Math.random() * freqData.length);
+          const val = freqData[fi];
+          if (val > 20) {
+            if (mode === 'galaxy') {
+              spawnGalaxyParticles(amp, fi);
+            } else {
+              const angle = Math.random() * Math.PI * 2;
+              const dist = Math.random() * Math.min(W, H) * 0.35;
+              const px = cx + Math.cos(angle) * dist;
+              const py = cy + Math.sin(angle) * dist;
+              spawnFromFreq(px, py, fi, val);
+            }
+          }
+        }
+        if (beatDetected) {
+          for (let i = 0; i < 30; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 100;
+            const px = cx + Math.cos(angle) * dist;
+            const py = cy + Math.sin(angle) * dist;
+            spawnFromFreq(px, py, 4, 80 + Math.random() * 40);
+          }
+        }
+      }
+
+      // Update particles
+      for (let p of particles) p.update(amp, freqAvg);
+      particles = particles.filter(p => !p.isDead());
+      for (let p of particles) p.draw();
+
+      drawVignette();
+      drawScanlines();
+      applyChromatic();
+      ctx.restore();
+
+      updateHUD(amp, bass);
+
+      // Auto-cycle modes
+      autoTimer++;
+      if (autoTimer > 600) {
+        autoTimer = 0;
+        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm'];
+        const idx = modes.indexOf(mode);
+        const next = modes[(idx + 1) % modes.length];
+        toggleMode(next);
+      }
+
+      time++;
+      if (!paused) requestAnimationFrame(update);
+    }
+
+    async function initMic() {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.8;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        sourceNode = audioCtx.createMediaStreamSource(stream);
+        sourceNode.connect(analyser);
+        freqData = new Uint8Array(analyser.frequencyBinCount);
+        waveData = new Uint8Array(analyser.frequencyBinCount);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function loadAudioFile(file) {
+      if (audioCtx) {
+        audioCtx.close();
+        audioCtx = null;
+      }
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.8;
+
+      audioElement = new Audio();
+      audioElement.src = URL.createObjectURL(file);
+      audioElement.loop = true;
+      sourceNode = audioCtx.createMediaElementSource(audioElement);
+      sourceNode.connect(analyser);
+      audioCtx.connect(audioCtx.destination);
+      audioElement.play();
+      freqData = new Uint8Array(analyser.frequencyBinCount);
+      waveData = new Uint8Array(analyser.frequencyBinCount);
+    }
+
+    let hasAudio = false;
+    async function ensureAudio() {
+      if (!hasAudio) {
+        hasAudio = await initMic();
+      }
+    }
+
+    function toggleFile() {
+      document.getElementById('file-input').click();
+    }
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      if (e.target.files[0]) {
+        hasAudio = true;
+        loadAudioFile(e.target.files[0]);
+      }
+    });
+
+    function toggleMode(m) {
+      mode = m;
+      const btns = { particles: 'btnParticles', spiral: 'btnSpiral', galaxy: 'btnGalaxy', wave: 'btnWave', storm: 'btnStorm' };
+      Object.values(btns).forEach(id => document.getElementById(id).classList.remove('active'));
+      const btn = document.getElementById(btns[m]);
+      if (btn) btn.classList.add('active');
+      particles = [];
+      autoTimer = 0;
+    }
+
+    const themeKeys = Object.keys(themes);
+    let themeIdx = 0;
+    function cycleTheme() {
+      themeIdx = (themeIdx + 1) % themeKeys.length;
+      currentTheme = themeKeys[themeIdx];
+    }
+
+    window.addEventListener('keydown', async (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!hasAudio) {
+          await ensureAudio();
+        }
+        if (audioElement) {
+          if (paused) { audioElement.play(); paused = false; }
+          else { audioElement.pause(); paused = true; }
+        } else if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+          paused = false;
+        } else if (!hasAudio) {
+          hasAudio = await initMic();
+        }
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        const modes = ['particles', 'spiral', 'galaxy', 'wave', 'storm'];
+        const idx = modes.indexOf(mode);
+        toggleMode(modes[(idx + 1) % modes.length]);
+      }
+      if (e.key === 't' || e.key === 'T') cycleTheme();
+    });
+
+    window.addEventListener('resize', resize);
+
+    // Drag and drop
+    const dropOverlay = document.getElementById('drop-overlay');
+    window.addEventListener('dragover', (e) => { e.preventDefault(); dropOverlay.classList.add('show'); });
+    window.addEventListener('dragleave', () => dropOverlay.classList.remove('show'));
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropOverlay.classList.remove('show');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('audio/')) {
+        hasAudio = true;
+        loadAudioFile(file);
+      }
+    });
+
+    // Click anywhere to init audio (browser autoplay policy)
+    window.addEventListener('click', async () => {
+      if (!hasAudio) {
+        hasAudio = await initMic();
+      }
+    }, { once: true });
+
+    resize();
+    update();
+  </script>
+</body>
+</html>
