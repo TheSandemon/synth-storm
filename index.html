@@ -787,18 +787,19 @@
       for (let arm = 0; arm < arms; arm++) {
         const baseAngle = (arm / arms) * Math.PI * 2;
         ctx.beginPath();
+        let lastAlpha = 0;
         for (let i = 0; i < 500; i++) {
           const t_val = i / 500;
           const spiralAngle = baseAngle + t_val * Math.PI * 5 + time * 0.012;
           const r = t_val * (H * 0.47) * (1 + beatDecay * 0.25);
           const x = cx + Math.cos(spiralAngle) * r;
           const y = cy + Math.sin(spiralAngle) * r;
-          const alpha = (1 - t_val) * 0.45;
+          lastAlpha = (1 - t_val) * 0.45;
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
         const col = arm === 0 ? t.bass : arm === 1 ? t.mid : arm === 2 ? t.accent : t.particle;
-        ctx.strokeStyle = col + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.strokeStyle = col + Math.floor(lastAlpha * 255).toString(16).padStart(2, '0');
         ctx.lineWidth = 1.5 + beatDecay * 1.5;
         ctx.stroke();
       }
@@ -1120,5 +1121,6 @@
   </script>
 </body>
 </html>
-< ! - -   0 3 / 2 7 / 2 0 2 6   1 4 : 3 6 : 1 2   - - >  
+< ! - -   0 3 / 2 7 / 2 0 2 6   1 4 : 3 6 : 1 2   - - > 
+ 
  
